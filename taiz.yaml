@@ -1,0 +1,10 @@
+name: taiz-cli
+version: 1.0.0
+description: ""
+dependencies: {}
+devDependencies: {}
+scripts:
+  dev: taiz dev
+  build: taiz build
+projectTypes:
+  - node

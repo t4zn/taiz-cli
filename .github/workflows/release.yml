@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install pkg
+      run: npm install -g pkg
+    
+    - name: Build executables
+      run: npm run build-all
+    
+    - name: Create ZIP distributions
+      run: npm run create-zip
+    
+    - name: Calculate hashes
+      run: npm run calculate-hash
+    
+    - name: Prepare Winget manifest
+      run: npm run prepare-winget
+    
+    - name: Prepare Homebrew formula
+      run: npm run prepare-homebrew
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/taiz-*.zip
+          dist/taiz-win.exe
+          dist/taiz-macos
+          dist/taiz-linux
+          dist/SHA256SUMS.txt
+        body: |
+          ## Taiz CLI ${{ github.ref_name }}
+          
+          A polyglot package manager for developers.
+          
+          ### Installation
+          
+          **Windows:**
+          ```bash
+          winget install YourName.Taiz
+          ```
+          
+          **macOS:**
+          ```bash
+          # From Homebrew core (after acceptance)
+          brew install taiz
+          
+          # From custom tap (immediate)
+          brew tap yourusername/taiz
+          brew install taiz
+          ```
+          
+          **Linux/Other:**
+          ```bash
+          npm install -g taiz
+          ```
+          
+          ### Manual Installation
+          
+          1. Download the appropriate file for your platform
+          2. Extract (if ZIP) and add to your PATH
+          3. Run `taiz --help` to get started
+          
+          ### Features
+          
+          - Multi-language project detection (Node.js, Python, Rust, Go)
+          - Unified dependency management with taiz.yaml
+          - Development server integration
+          - Cross-platform support
+          
+          ### Checksums
+          
+          SHA256 checksums are available in `SHA256SUMS.txt`.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload distribution artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: distribution-files
+        path: |
+          winget-manifest/
+          Formula/
+          dist/homebrew-info.json
+          dist/*.sha256
